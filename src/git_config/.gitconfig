@@ -1,0 +1,13 @@
+[user]
+	name = Nanahoshi
+	email = nanahoshi.931@gmail.com
+[color]
+	ui = true
+[alias]
+	st = status
+	df = diff
+    co = commit
+    br = branch
+    ps = push
+    pl = pull
+    ck = checkout
