@@ -21,7 +21,8 @@ docker-ceがインストールされていること。
 ホストマシンにフォントを入れないと一部のフォントが文字化けします．
 以下のコマンドでフォントをインストール．
 
-```bash:PowerlineFontsのインストール
+PowerlineFontsのインストール
+```.zsh
 $ git clone https://github.com/powerline/fonts.git --depth=1
 $ cd fonts
 $ ./install.sh
@@ -31,7 +32,8 @@ $ cd ..
 $ rm -rf fonts
 ```
 
-```bash:NerdFontsのインストール
+NerdFontsのインストール
+```.zsh
 $ git clone --branch=master --depth 1 https://github.com/ryanoasis/nerd-fonts.git
 $ cd nerd-fonts
 $ ./install.sh
@@ -44,32 +46,32 @@ $ rm -fr nerd-fonts
 
 ### build
 1. githubからソースコードをダウンロード。
-```.sh
-$ git clone https://github.com/Nanahoshi23/MyDockerROS
+```.zsh
+$ git clone https://github.com/Nanahoshi23/MyDockerNvim
 ```````
 
 2. gitの設定を変更する.
-```.sh
+```.zsh
 $ vim src/git_config/.git_config
 ```
 mail,userは変更したほうが良いと思います．
 その他の設定についても
 
 3. nvimの設定を変更する．(任意)
-```.sh
+```.zsh
 $ vim src/nvim_config/nvim/init.vim
 ```
 
 4. イメージを作成
 srcディレクトリで``build.sh``を実行(少々時間がかかります)
-```
+```.zsh
 $ cd ./src
 $ ./build.sh
 ```````
 
 
 5. 実行
-```
+```.zsh
 $ docker run -it --rm \
           -e DISPLAY=unix$DISPLAY \
           -v /tmp/.X11-unix:/tmp/.X11-unix \
@@ -82,7 +84,7 @@ $ docker run -it --rm \
 ```
 $ cd ..
 $ rm -rf ./MyDockerNvim
-```````
+```
 
 ### bashrcやzshrcに関数を作っておくと便利です
 以下は自分の設定
@@ -174,6 +176,9 @@ visualモードで選択して`<Space>`+`e`で英語から日本語，`<Space>`+
 
 ### スクショから英語を英文を抽出してクリップボードに貼り付ける．
 　余分な文字が出てしまいます．今後修正予定.
+```
+:ScreenShotEinglish
+```
 
 ## 課題
 
@@ -212,6 +217,6 @@ visualモードで選択して`<Space>`+`e`で英語から日本語，`<Space>`+
 
 - イメージがホスト依存
 
-    previm用にguiを使うので,uidとguidをビルド時に渡しているが、entry_pintで専用のシェルを作るとrunするときに指定できるようなので改善したい。
+- スクショ英文抽出に問題あり
 
-    やっちゃいけないことをしている気がしてならない。
+    previm用にguiを使うので,uidとguidをビルド時に渡しているが、entry_pintで専用のシェルを作るとrunするときに指定できるようなので改善したい。
