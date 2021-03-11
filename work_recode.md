@@ -1,6 +1,5 @@
 ##2020年10月英語翻訳機能を追加
 
-
 trans
 open_jtalk
 apk add gcc g++ make build-base alsa-audio alpine-sdk musl-dev
@@ -48,16 +47,12 @@ open_jtalk等
     imagename
 
 
-## あとはpandoc
+## platformIOとかも入れると便利かもしれない(マイコン使う人は)
 
-texliveのくだりだけだね!
-
-this is test
-
+## あとはpandoctexliveのくだりだけ
 
 
 RUN  mkdir -p /home/$USERNAME/.local/share/fonts && \
     cd /home/$USERNAME/.local/share/fonts && \
     curl -fLo "Droid Sans Mono for Powerline Nerd Font Complete.otf" https://github.com/ryanoasis/nerd-fonts/raw/master/patched-fonts/DroidSansMono/complete/Droid%20Sans%20Mono%20Nerd%20Font%20Complete.otf
-
 

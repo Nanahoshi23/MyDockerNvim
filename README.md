@@ -1,4 +1,4 @@
-# Dockerで設定込みのneovim環境を作る[研究室内メモ]
+# Dockerで設定込みのneovim環境を作る
 
 ## 目的
 自分のPC以外での作業が多く、毎度毎度neovimのセットアップ(フォントやPython関係)を行うのが面倒だった。
@@ -44,13 +44,21 @@ $ rm -fr nerd-fonts
 
 ### build
 1. githubからソースコードをダウンロード。
-```
+```.sh
 $ git clone https://github.com/Nanahoshi23/MyDockerROS
 ```````
 
 2. gitの設定を変更する.
+```.sh
+$ vim src/git_config/.git_config
+```
+mail,userは変更したほうが良いと思います．
+その他の設定についても
 
 3. nvimの設定を変更する．(任意)
+```.sh
+$ vim src/nvim_config/nvim/init.vim
+```
 
 4. イメージを作成
 srcディレクトリで``build.sh``を実行(少々時間がかかります)
@@ -76,7 +84,7 @@ $ cd ..
 $ rm -rf ./MyDockerNvim
 ```````
 
-## bashrcやzshrcに関数を作っておくと便利です
+### bashrcやzshrcに関数を作っておくと便利です
 以下は自分の設定
 
 ```````.zsh
@@ -128,8 +136,11 @@ function dvim() {
 $ dvim
 ```````
 c-pが適切に反応しないことがあります．dockerのショートカットがデフォルトで登録されてるため．
-私の場合は以下の設定をすることで解消されました．
+私の場合は`~/.docker/config.json`に以下の設定を追加することで解消されました．
 ```
+{
+    "detachKeys": "ctrl-\\"
+}
 ```
 
 ## neovimの主な設定
@@ -147,7 +158,7 @@ vimも合わせて透過設定している。
 
 
 ### NERDTree
-`Ctrl-n`で起動.
+`Ctrl-n`でトグルします．
 
 ### fzf関係
 プレフィクスは`<Space>`
