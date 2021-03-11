@@ -12,260 +12,15 @@ Dockerでneovim環境を作ってる人たちがいることを知って自分�
 
 リンクが切れてしまっていました。
 
-## Dockerfile
-``````
-FROM alpine:edge AS ripgrep
-
-LABEL maintainer="mo10aki.931@gmail.com"
-
-ENV LANG="ja_JP.UTF-8" LANGUAGE="ja_JP:ja" LC_ALL="ja_JP.UTF-8"
-
-RUN echo "http://dl-4.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories
-RUN echo "@testing http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
-RUN apk update && \
-      apk upgrade && \
-      apk add --no-cache \
-      curl \
-      gcc \
-      git \
-      linux-headers \
-      musl-dev\
-      neovim \
-      bash \
-      fzf \
-      shadow \
-      sudo \
-      ripgrep \
-      bat@testing \
-      python-dev \
-      py-pip \
-      python3-dev \
-      boost-python3 \
-      firefox \
-      terminus-font \
-      ttf-freefont \
-      fontconfig-dev \
-      freetype-dev \
-      libcanberra-gtk3 \
-      make\
-      py3-pip && \
-      rm -rf /var/cache/apk/*
-
-RUN mkdir /noto
-ADD https://noto-website.storage.googleapis.com/pkgs/NotoSansCJKjp-hinted.zip /noto 
-WORKDIR /noto
-
-RUN unzip NotoSansCJKjp-hinted.zip && \
-    mkdir -p /usr/share/fonts/noto && \
-    cp *.otf /usr/share/fonts/noto && \
-    chmod 644 -R /usr/share/fonts/noto/ && \
-    fc-cache -fv
-
-RUN cp /usr/share/fonts/noto/* /usr/share/fonts
-
-WORKDIR /
-RUN rm -rf /noto
-
-
-ENV PYTHONUNBUFFERED=1
-
-RUN pip3 install --upgrade pip pynvim
-
-RUN wget https://bootstrap.pypa.io/get-pip.py
-RUN python2 get-pip.py
-RUN python3 get-pip.py
-RUN python2 -m pip install pynvim
-
-# Arguments picked from the command line!
-ARG user
-ARG uid
-ARG gid
-
-# Add new user with our credentials
-ENV USERNAME ${user}
-RUN addgroup -g ${gid} -S $USERNAME
-RUN adduser -u ${uid} --ingroup $USERNAME -S $USERNAME && \
-    echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
-    chmod 0440 /etc/sudoers && \
-    echo "$USERNAME:$USERNAME" | chpasswd && \
-    usermod -aG $USERNAME $USERNAME
-
-USER ${USERNAME}
-
-COPY nvim_config /home/$USERNAME/.config
-COPY nvim_config /root/.config
-
-RUN curl -fLo /home/$USERNAME/.local/share/nvim/site/autoload/plug.vim --create-dirs \
-    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
-
-RUN echo "${gitconfig_file_path}"
-COPY git_config/.gitconfig /home/$USERNAME/
-
-RUN nvim +PlugInstall +qa
-
-WORKDIR /home/motoaki/.local/share/nvim/plugged/vimproc.vim 
-RUN make
-
-WORKDIR /usr/src/nvim
-ENTRYPOINT ["nvim"]
-``````
-
-### ブラウザ用の日本語フォントのインストール
-```
-RUN mkdir /noto
-ADD https://noto-website.storage.googleapis.com/pkgs/NotoSansCJKjp-hinted.zip /noto 
-WORKDIR /noto
-
-RUN unzip NotoSansCJKjp-hinted.zip && \
-    mkdir -p /usr/share/fonts/noto && \
-    cp *.otf /usr/share/fonts/noto && \
-    chmod 644 -R /usr/share/fonts/noto/ && \
-    fc-cache -fv
-
-RUN cp /usr/share/fonts/noto/* /usr/share/fonts
-```````
-
-### Pythonにpynvimをインストール
-```
-ENV PYTHONUNBUFFERED=1
-
-RUN pip3 install --upgrade pip pynvim
-
-RUN wget https://bootstrap.pypa.io/get-pip.py
-RUN python2 get-pip.py
-RUN python3 get-pip.py
-RUN python2 -m pip install pynvim
-```````
-### userを作成
-ownerとブラウザ用にXを使うuserを追加する.
-```
-# Add new user with our credentials
-ENV USERNAME ${user}
-RUN addgroup -g ${gid} -S $USERNAME
-RUN adduser -u ${uid} --ingroup $USERNAME -S $USERNAME && \
-    echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
-    chmod 0440 /etc/sudoers && \
-    echo "$USERNAME:$USERNAME" | chpasswd && \
-    usermod -aG $USERNAME $USERNAME
-```````
-
-## Dockerイメージの作成
+## Install
 ### 前提
-  docker-ceがインストールされていること。
-  インストールがまだの場合は、[公式ページ](https://docs.docker.com/engine/install/debian/)を参考にインストールしてください。
 
-### build
-1. githubから作業ディレクトリをダウンロード。
-```
-$ git clone 
-```````
-2. gitconfigをコピーする。
-``````
-$ cd ./my_docker_neovim
-$ cp ~/.gitconfig ./
-```````
+docker-ceがインストールされていること。
+インストールがまだの場合は、[公式ページ](https://docs.docker.com/engine/install/debian/)を参考にインストールしてください。
 
+ホストマシンにフォントを入れないと一部のフォントが文字化けします．
+以下のコマンドでフォントをインストール．
 
-3. 作業ディレクトリで``build.sh``を実行(少々時間がかかります)
-```
-$ ./build.sh
-```````
-4. 実行
-```
-$ docker run -it --rm \
-          -e DISPLAY=unix$DISPLAY \
-          -v /tmp/.X11-unix:/tmp/.X11-unix \
-          -v /tmp/.docker.xauth:/tmp/.docker.xauth:rw \
-          -e XAUTHORITY=/tmp/.docker.xauth \
-          -v ${dir_name}:/usr/src/nvim nvim
-```````
-5. イメージができたら作業ディレクトリは削除可
-```
-$ cd ..
-$ rm -rf ./my_docker_neovim
-```````
-
-## bashrcやzshrcに関数を作っておくと便利です
-以下は自分の設定
-```
-function dvim() {
-    if [ $# -ne 1 ];
-    then
-        # 引数がなかった場合、カレントディレクトリをルートとしてvimを起動
-        dir_name=$(pwd)
-        docker run -it --rm \
-          -e DISPLAY=unix$DISPLAY \
-          -v /tmp/.X11-unix:/tmp/.X11-unix \
-          -v /tmp/.docker.xauth:/tmp/.docker.xauth:rw \
-          -e XAUTHORITY=/tmp/.docker.xauth \
-          -v ${dir_name}:/usr/src/nvim nvim
-    else
-        file_path=${1}
-        if [ -d ${file_path} ]; then
-            # ディレクトリが引数だった場合、そのディレクトリをルートとしてvimを起動
-            dir_name=$($(cd $(dirname ${1}) &> /dev/null) && pwd )
-            dir_name=$(echo "${dir_name}")
-            file_name=$(echo $(basename ${1}))
-            dir_path=$(echo "${dir_name}/${file_name}")
-            docker run  -it --rm \
-              -e DISPLAY=unix$DISPLAY \
-              -v /tmp/.X11-unix:/tmp/.X11-unix \
-              -v /tmp/.docker.xauth:/tmp/.docker.xauth:rw \
-              -e XAUTHORITY=/tmp/.docker.xauth \
-              -v ${dir_path}:/usr/src/nvim nvim
-        else
-            # 引数がファイルだった場合は、ファイルのあるディレクトリをルートとしてvimを起動
-            dir_name=$($(cd $(dirname ${1}) &> /dev/null) && pwd )
-            file_name=$(echo $(basename ${1}))
-            docker run  -it --rm \
-              -e DISPLAY=unix$DISPLAY \
-              -v /tmp/.X11-unix:/tmp/.X11-unix \
-              -v /tmp/.docker.xauth:/tmp/.docker.xauth:rw \
-              -e XAUTHORITY=/tmp/.docker.xauth \
-              -v ${dir_name}:/usr/src/nvim nvim ${file_name}
-        fi
-    fi
-}
-```````
-
-### 実行
-```
-$ dvim
-```````
-
-### c-pが適切に反応しないことがあります．dockerのショートカットがデフォルトで登録されてるため．
-以下の設定をする.
-
-## neovimの主な設定
-
-### 透過処理
-guiアプリ動かしながらshell操作することがあり,端末を透過設定にしていることが多いので
-vimも合わせて透過設定している。
-
-### NERDTree
-`Ctrl-n`で起動
-
-### fzf関係
-プレフィクスは`<Space>`
-`<Space>`+`f`: カレントディレクトリ以下のファイル検索
-`<Space>`+`j`: ジャンプリスト
-`<Space>`+`l`: バッファで行検索
-`<Space>`+`/`: 現在開いているファイルで行検索
-`<Space>`+`g`: `ripgrep`
-
-
-### ripgrep
-``Ctrl-g``
-
-### 翻訳
-visualモードで選択して`<Space>`+`e`で英語から日本語，`<Space>`+'j'で日本語から英語
-
-## フォントについて
-
-パワーラインとノードをそれぞれホストマシンにいれて端末のフォントをノードにする必要が有る．
-逆にイメージのなかではフォントをダウンロードしなくてもよい？
-
-[]
 ```bash:PowerlineFontsのインストール
 $ git clone https://github.com/powerline/fonts.git --depth=1
 $ cd fonts
@@ -284,6 +39,130 @@ $ cd ..
 $ rm -fr nerd-fonts
 ```
 
+端末のプロファイル設定を，Nerd系のフォントに変更してください．
+
+
+### build
+1. githubからソースコードをダウンロード。
+```
+$ git clone https://github.com/Nanahoshi23/MyDockerROS
+```````
+
+2. gitの設定を変更する.
+
+3. nvimの設定を変更する．(任意)
+
+4. イメージを作成
+srcディレクトリで``build.sh``を実行(少々時間がかかります)
+```
+$ cd ./src
+$ ./build.sh
+```````
+
+
+5. 実行
+```
+$ docker run -it --rm \
+          -e DISPLAY=unix$DISPLAY \
+          -v /tmp/.X11-unix:/tmp/.X11-unix \
+          -v /tmp/.docker.xauth:/tmp/.docker.xauth:rw \
+          -e XAUTHORITY=/tmp/.docker.xauth \
+          -v ${dir_name}:/usr/src/nvim nvim
+```````
+
+6. イメージができたら作業ディレクトリは削除可
+```
+$ cd ..
+$ rm -rf ./MyDockerNvim
+```````
+
+## bashrcやzshrcに関数を作っておくと便利です
+以下は自分の設定
+
+```````.zsh
+function dvim() {
+    if [ $# -ne 1 ];
+    then
+        # 引数がなかった場合、カレントディレクトリをルートとしてvimを起動
+        dir_name=$(pwd)
+        docker run -it --rm \
+          -e DISPLAY=unix$DISPLAY \
+          -v /tmp/.X11-unix:/tmp/.X11-unix \
+          -v /tmp/.docker.xauth:/tmp/.docker.xauth:rw \
+          -e XAUTHORITY=/tmp/.docker.xauth \
+          -v /dev/dsp:/dev/dsp:rw \
+          -v ${dir_name}:/usr/src/nvim nvim
+    else
+        file_path=${1}
+        if [ -d ${file_path} ]; then
+            # ディレクトリが引数だった場合、そのディレクトリをルートとしてvimを起動
+            dir_name=$($(cd $(dirname ${1}) &> /dev/null) && pwd )
+            dir_name=$(echo "${dir_name}")
+            file_name=$(echo $(basename ${1}))
+            dir_path=$(echo "${dir_name}/${file_name}")
+            docker run  -it --rm \
+              -e DISPLAY=unix$DISPLAY \
+              -v /tmp/.X11-unix:/tmp/.X11-unix \
+              -v /tmp/.docker.xauth:/tmp/.docker.xauth:rw \
+              -e XAUTHORITY=/tmp/.docker.xauth \
+              -v /dev/dsp:/dev/dsp:rw \
+              -v ${dir_path}:/usr/src/nvim nvim
+        else
+            # 引数がファイルだった場合は、ファイルのあるディレクトリをルートとしてvimを起動
+            dir_name=$($(cd $(dirname ${1}) &> /dev/null) && pwd )
+            file_name=$(echo $(basename ${1}))
+            docker run  -it --rm \
+              -e DISPLAY=unix$DISPLAY \
+              -v /tmp/.X11-unix:/tmp/.X11-unix \
+              -v /tmp/.docker.xauth:/tmp/.docker.xauth:rw \
+              -e XAUTHORITY=/tmp/.docker.xauth \
+              -v /dev/dsp:/dev/dsp:rw \
+              -v ${dir_name}:/usr/src/nvim nvim ${file_name}
+        fi
+    fi
+}
+```````
+
+### 実行
+```
+$ dvim
+```````
+c-pが適切に反応しないことがあります．dockerのショートカットがデフォルトで登録されてるため．
+私の場合は以下の設定をすることで解消されました．
+```
+```
+
+## neovimの主な設定
+細かい設定は`src/nvim_config/nvim/init.vim`を参照．
+気に入らない場合はイメージを作る前に書き換える(イメージを作ったあとに設定ファイルを書き換えても変更が反映されません．今後修正予定)
+なるべくデフォルトのキーマッピングは残したかったけど，結構かえてしまった．
+
+### 透過処理
+guiアプリ動かしながらshell操作することがあり,端末を透過設定にしていることが多いので
+vimも合わせて透過設定している。
+
+### スクリーン操作
+プレフィックスは`s`keyにまとめてある．
+畳み込みの操作も`s`keyにまとめた．
+
+
+### NERDTree
+`Ctrl-n`で起動.
+
+### fzf関係
+プレフィクスは`<Space>`
+`<Space>`+`f`: カレントディレクトリ以下のファイル検索
+`<Space>`+`j`: ジャンプリスト
+`<Space>`+`l`: バッファで行検索
+`<Space>`+`/`: 現在開いているファイルで行検索
+`<Space>`+`g`: `ripgrep`
+
+
+### 翻訳
+visualモードで選択して`<Space>`+`e`で英語から日本語，`<Space>`+'j'で日本語から英語
+
+### スクショから英語を英文を抽出してクリップボードに貼り付ける．
+　余分な文字が出てしまいます．今後修正予定.
 
 ## 課題
 
